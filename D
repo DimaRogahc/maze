@@ -1,0 +1,156 @@
+rom pygame import *
+
+#######################################################################################################################
+# КОНСТАНТЫ
+#######################################################################################################################
+WINDOW_WIDTH = 700
+WINDOW_HEIGHT = 500
+WINDOW_TITLE = "Игра -> ЛАБИРИНТ"
+
+MUSIC_BACKGROUND = "epic.ogg"
+
+IMAGE_BACKGROUND = "bg.jpg"
+IMAGE_HERO = "hero.png"
+IMAGE_CYBORG = "cyborg.png"
+IMAGE_TREASURE = "treasure.png"
+
+FPS = 60
+GAME = True
+
+
+
+class GameSprite(sprite.Sprite):
+
+    def __init__(self, player_image, player_x, player_y, player_speed):
+        super().__init__()
+
+        self.image = transform.scale(image.load(player_image), (65, 65))
+        self.speed = player_speed
+
+        self.rect = self.image.get_rect()
+        self.rect.x = player_x
+        self.rect.y = player_y
+
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+class Player(GameSprite):
+    def update(self):
+        keys = key.get_pressed() 
+        if keys[K_a] and self.rect.x > 5:
+            self.rect.x -= self.speed
+        if keys[K_d] and self.rect.x < WINDOW_WIDTH - 80:
+            self.rect.x += self.speed
+        if keys[K_w] and self.rect.y > 5:
+            self.rect.y -= self.speed
+        if keys[K_s] and self.rect.y < WINDOW_HEIGHT - 80:
+            self.rect.y += self.speed
+
+class Enemy(GameSprite):
+    direction = 'left'
+    def update(self):
+        if self.rect.x <= 470:
+            self.direction = 'right'
+        if self.rect.x >= WINDOW_WIDTH - 70:
+            self.direction = 'left'
+        if self.direction == 'left':
+            self.rect.x -= self.speed
+        else:
+            self.rect.x += self.speed
+
+class Wall(sprite.Sprite):
+    def __init__(self, wall_image, wall_x, wall_y, wall_width, wall_height):
+        super().__init__()
+        self.width = wall_width
+        self.height = wall_height
+        self.image = transform.scale(image.load(wall_image), (wall_width, wall_height))
+        self.rect = self.image.get_rect()
+        self.rect.x = wall_x
+        self.rect.y = wall_y
+
+    def draw_wall(self):
+        window.blit(self.image,(self.rect.x, self.rect.y))
+
+window = display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+display.set_caption(WINDOW_TITLE)
+background = transform.scale(image.load(IMAGE_BACKGROUND), (WINDOW_WIDTH, WINDOW_HEIGHT))
+
+
+clock = time.Clock()
+
+
+mixer.init()
+mixer.music.load(MUSIC_BACKGROUND)
+mixer.music.play()
+
+hero = Player(player_image = IMAGE_HERO,
+                    player_x     = 5,
+                    player_y     = WINDOW_HEIGHT - 80,
+                    player_speed = 4)
+
+cyborg = Enemy(player_image = IMAGE_CYBORG,
+                    player_x     = WINDOW_WIDTH - 80,
+                    player_y     = 280,
+                    player_speed = 2)
+
+final  = GameSprite(player_image = IMAGE_TREASURE,
+                    player_x     = WINDOW_WIDTH - 70,
+                    player_y     = WINDOW_HEIGHT - 70,
+                    player_speed = 0)
+
+wall_1 = Wall("stena.jpg", wall_x = 120, wall_y = 100, wall_width=15, wall_height=400)
+wall_2 = Wall("stena.jpg", wall_x = 120, wall_y = 100, wall_width=110, wall_height=15)
+wall_3 = Wall("stena.jpg", wall_x = 220, wall_y = 100, wall_width=15, wall_height=400)
+wall_4 = Wall("stena.jpg", wall_x = 340, wall_y = 0, wall_width=15, wall_height=300)
+wall_5 = Wall("stena.jpg", wall_x = 460, wall_y = 130, wall_width=15, wall_height=400)
+wall_6 = Wall("stena.jpg", wall_x = 460, wall_y = 130, wall_width=110, wall_height=15)
+
+finish = False
+money = 'money.ogg'
+kick = "kick.ogg"
+
+font.init()
+font = font.SysFont('Arial',70)
+win = font.render("YOU WIN!!!", True, (34,132,26))
+lose = font.render("YOU LOSE!", True, (255,0,0))
+
+while GAME:
+    for e in event.get():
+        if e.type == QUIT:
+            GAME = False
+
+
+    if finish != True:
+
+        window.blit(background, (0, 0))
+        hero.update()
+        cyborg.update()
+
+        wall_1.draw_wall()
+        wall_2.draw_wall()
+        wall_3.draw_wall()
+        wall_4.draw_wall()
+        wall_5.draw_wall()
+        wall_6.draw_wall()
+
+        hero.reset()
+        cyborg.reset()
+        final.reset()
+
+        if sprite.collide_rect(hero, final):
+            window.blit(win, (200, 200))
+            finish = True
+            mixer.init()
+            mixer.music.load(money)
+            mixer.music.play()
+        
+        if sprite.collide_rect(hero, cyborg) or sprite.collide_rect(hero, wall_1) or sprite.collide_rect(hero, wall_2) or sprite.collide_rect(hero, wall_3) or sprite.collide_rect(hero, wall_4) or sprite.collide_rect(hero, wall_5) or sprite.collide_rect(hero, wall_6):
+            window.blit(lose, (200, 200))
+            finish = True
+            mixer.init()
+            mixer.music.load(kick)
+            mixer.music.play()
+        
+
+        display.update()
+        clock.tick(FPS)
